@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 
 # Настройка страницы
@@ -34,8 +35,8 @@ def load_data():
     file_name = "Fake_Calculator_2026.xlsx"
     df = pd.read_excel(file_name, sheet_name="Данные")
     
-    cols_to_fix = ['Digital', 'TV', 'Others offline', 'Smart TV', 'Видео',
-                   'Мобайл (in-app)', 'Контекст', 'Программатик баннеры',
+    cols_to_fix = ['Digital', 'TV', 'Others offline', 'Smart TV', 'Видео', 
+                   'Мобайл (in-app)', 'Контекст', 'Программатик баннеры', 
                    'Нативные баннеры', 'Соц.сети']
     
     for col in cols_to_fix:
@@ -50,7 +51,7 @@ except Exception as e:
     st.stop()
 
 # --- ИНТЕРФЕЙС: ВЕРХНЯЯ ЧАСТЬ ---
-st.title("Медиа-калькулятор клиента")
+st.title("Медиа-калькулятор клиента") 
 st.markdown("---")
 
 st.subheader("Параметры выбора")
@@ -67,11 +68,11 @@ with c3:
     period = st.selectbox("Сезональность РК", sorted(df['Сезональность РК'].unique()))
 
 filtered = df[
-    (df['ГЕО'] == geo) &
-    (df['ЦА'] == audience) &
-    (df['Сегменты'] == segments) &
-    (df['Бюджет до (₽)'] == budget) &
-    (df['Конкуренты'] == competitors) &
+    (df['ГЕО'] == geo) & 
+    (df['ЦА'] == audience) & 
+    (df['Сегменты'] == segments) & 
+    (df['Бюджет до (₽)'] == budget) & 
+    (df['Конкуренты'] == competitors) & 
     (df['Сезональность РК'] == period)
 ]
 
@@ -86,24 +87,36 @@ if not filtered.empty:
     m1, m2, m3, m4, m5 = st.columns(5)
     
     # 1. Емкость ЦА (всего)
-    try:
-        cap_val = f"{int(res['Емкость всего']):,}".replace(',', ' ')
-    except:
-        cap_val = str(res['Емкость всего'])
+    cap_raw = res['Емкость всего']
+    if pd.isna(cap_raw) or str(cap_raw).lower() == 'nan':
+        cap_val = "Скрыто (Demo)"
+    else:
+        try:
+            cap_val = f"{int(cap_raw):,}".replace(',', ' ')
+        except:
+            cap_val = str(cap_raw)
     m1.metric("Доступная емкость ЦА всего, чел", cap_val)
 
     # 2. Рекламная емкость (Digital)
-    try:
-        adv_cap_val = f"{int(res['Рекламная емкость']):,}".replace(',', ' ')
-    except:
-        adv_cap_val = str(res['Рекламная емкость'])
+    adv_raw = res['Рекламная емкость']
+    if pd.isna(adv_raw) or str(adv_raw).lower() == 'nan':
+        adv_cap_val = "Скрыто (Demo)"
+    else:
+        try:
+            adv_cap_val = f"{int(adv_raw):,}".replace(',', ' ')
+        except:
+            adv_cap_val = str(adv_raw)
     m2.metric("Доступная емкость ЦА в Интернете, чел", adv_cap_val)
     
-    # 3. Прогнозный охват (Исправлено)
-    try:
-        cov_val = f"{int(res['Прогнозный охват']):,}".replace(',', ' ')
-    except:
-        cov_val = str(res['Прогнозный охват'])
+    # 3. Прогнозный охват (ЖЕСТКАЯ ПРОВЕРКА НА NAN)
+    cov_raw = res['Прогнозный охват']
+    if pd.isna(cov_raw) or str(cov_raw).lower() == 'nan':
+        cov_val = "Скрыто (Demo)"
+    else:
+        try:
+            cov_val = f"{int(cov_raw):,}".replace(',', ' ')
+        except:
+            cov_val = str(cov_raw)
     m3.metric("Прогнозный охват ЦА за период РК, чел", cov_val)
     
     # 4. Охват в %
@@ -124,7 +137,7 @@ if not filtered.empty:
             'Доля': [res['Digital'], res['TV'], res['Others offline']]
         }).query("Доля > 0")
         
-        fig1 = px.pie(pie_df, values='Доля', names='Канал', hole=.4,
+        fig1 = px.pie(pie_df, values='Доля', names='Канал', hole=.4, 
                       color_discrete_sequence=px.colors.qualitative.Pastel)
         fig1.update_traces(textinfo='percent+label')
         st.plotly_chart(fig1, use_container_width=True)
