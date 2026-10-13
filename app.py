@@ -5,6 +5,21 @@ import plotly.express as px
 # Настройка страницы
 st.set_page_config(page_title="Медиа-калькулятор (Demo)", layout="wide")
 
+# --- ДОБАВЛЕНИЕ КАРТИНОК В САЙДБАР ---
+with st.sidebar:
+    try:
+        st.image("Logo1.png", use_container_width=True)
+    except:
+        pass
+    
+    st.markdown("### О проекте")
+    st.info("Демо-версия медиа-калькулятора. Данные анонимизированы и искажены для публичной демонстрации.")
+    
+    try:
+        st.image("Logo2.png", use_container_width=True)
+    except:
+        pass
+
 def clean_percent_val(x):
     if isinstance(x, str):
         x = x.replace('%', '').replace(',', '.').strip()
@@ -19,9 +34,8 @@ def load_data():
     file_name = "Fake_Calculator_2026.xlsx"
     df = pd.read_excel(file_name, sheet_name="Данные")
     
-    # Исправляем только колонки для ГРАФИКОВ
-    cols_to_fix = ['Digital', 'TV', 'Others offline', 'Smart TV', 'Видео', 
-                   'Мобайл (in-app)', 'Контекст', 'Программатик баннеры', 
+    cols_to_fix = ['Digital', 'TV', 'Others offline', 'Smart TV', 'Видео',
+                   'Мобайл (in-app)', 'Контекст', 'Программатик баннеры',
                    'Нативные баннеры', 'Соц.сети']
     
     for col in cols_to_fix:
@@ -36,12 +50,11 @@ except Exception as e:
     st.stop()
 
 # --- ИНТЕРФЕЙС: ВЕРХНЯЯ ЧАСТЬ ---
-st.title("Медиа-калькулятор клиента") 
+st.title("Медиа-калькулятор клиента")
 st.markdown("---")
 
 st.subheader("Параметры выбора")
 
-# Сетка фильтров 3x2
 c1, c2, c3 = st.columns(3)
 with c1:
     geo = st.selectbox("ГЕО", sorted(df['ГЕО'].unique()))
@@ -53,13 +66,12 @@ with c3:
     competitors = st.selectbox("Активность конкурентного поля", sorted(df['Конкуренты'].unique()))
     period = st.selectbox("Сезональность РК", sorted(df['Сезональность РК'].unique()))
 
-# Фильтрация данных
 filtered = df[
-    (df['ГЕО'] == geo) & 
-    (df['ЦА'] == audience) & 
-    (df['Сегменты'] == segments) & 
-    (df['Бюджет до (₽)'] == budget) & 
-    (df['Конкуренты'] == competitors) & 
+    (df['ГЕО'] == geo) &
+    (df['ЦА'] == audience) &
+    (df['Сегменты'] == segments) &
+    (df['Бюджет до (₽)'] == budget) &
+    (df['Конкуренты'] == competitors) &
     (df['Сезональность РК'] == period)
 ]
 
@@ -87,8 +99,12 @@ if not filtered.empty:
         adv_cap_val = str(res['Рекламная емкость'])
     m2.metric("Доступная емкость ЦА в Интернете, чел", adv_cap_val)
     
-    # 3. Прогнозный охват
-    m3.metric("Прогнозный охват ЦА за период РК, чел", str(res['Прогнозный охват']))
+    # 3. Прогнозный охват (Исправлено)
+    try:
+        cov_val = f"{int(res['Прогнозный охват']):,}".replace(',', ' ')
+    except:
+        cov_val = str(res['Прогнозный охват'])
+    m3.metric("Прогнозный охват ЦА за период РК, чел", cov_val)
     
     # 4. Охват в %
     m4.metric("Прогноз. охват на частоте 1+ на период РК, %", str(res['Прогнозный охват, %']))
@@ -108,7 +124,7 @@ if not filtered.empty:
             'Доля': [res['Digital'], res['TV'], res['Others offline']]
         }).query("Доля > 0")
         
-        fig1 = px.pie(pie_df, values='Доля', names='Канал', hole=.4, 
+        fig1 = px.pie(pie_df, values='Доля', names='Канал', hole=.4,
                       color_discrete_sequence=px.colors.qualitative.Pastel)
         fig1.update_traces(textinfo='percent+label')
         st.plotly_chart(fig1, use_container_width=True)
